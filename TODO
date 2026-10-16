@@ -1,0 +1,102 @@
+# TODO — Notification Service
+
+Day-sized milestones, in build order. Each one ends in something you can
+actually run and see. Source of truth: `docs/dd.md`.
+
+## Done
+- [x] Solution layout: `src/`, `tests/`, `docs/`
+- [x] Domain model: `Notification` + `NotificationStatus` with state transitions
+- [x] Persistence: EF Core (SQLite) `AppDbContext` + initial migration
+- [x] Application interfaces: `INotificationService`, `INotificationRepository`,
+      `IRepository`, `IUnitOfWork`, `IQueue`
+- [x] `NotificationService` (create/get/update/delete)
+- [x] Infrastructure: repositories, `UnitOfWork`, `InMemoryQueue`, DI wiring
+- [x] Central error handling: `GlobalExceptionHandler` + ProblemDetails + HTTP logging
+- [x] Automatic migrations on startup (Development)
+
+---
+
+## M1 — Notification intake API
+Turn the API into a real accept-and-inspect surface.
+
+- `POST /notifications`: validate, create, store, publish, return `202 Accepted`
+- `GET /notifications/{id}` to expose current status
+- Consistent ProblemDetails for validation/bad input
+- Remove the `/hello` and `/exception` placeholders
+- EF entity configuration + indexes for status/time (with migration)
+
+**Done when:** posting a valid notification returns `202` with an id, the row is
+stored as `Queued`, `GET` returns it, and invalid input returns problem details.
+
+---
+
+## M2 — Delivery pipeline, happy path
+Make queued work actually get delivered, behind a provider boundary.
+
+- `INotificationProvider` abstraction + fake email provider (can simulate failure)
+- Hosted background worker that consumes the queue
+- `Queued → Processing → Sent` transitions; skip notifications already `Sent`
+- Structured logging for queued / processing / delivered
+
+**Done when:** after posting, the worker delivers it and the status becomes
+`Sent`; re-delivering an already-`Sent` notification is a no-op.
+
+---
+
+## M3 — Local infrastructure & configuration
+Make the system runnable together with its real dependencies.
+
+- `docker-compose.yml` with SQL DB and RabbitMQ
+- DB and RabbitMQ connection details from configuration, not hardcoded
+
+**Done when:** from a clean checkout, `docker compose up` starts the
+dependencies and the app connects to them.
+
+---
+
+## M4 — Durable messaging with RabbitMQ
+Replace the in-memory queue with the real message boundary.
+
+- RabbitMQ-backed `IQueue<Notification>`, publishing only the notification id
+- Exchange + queue setup; explicit ack only after successful processing
+- At-least-once delivery; consumer tolerates duplicates
+
+**Done when:** messages flow through RabbitMQ; killing the worker mid-flight and
+restarting it still processes the pending work.
+
+---
+
+## M5 — Retries & dead-lettering
+Handle the failure path described in dd.md.
+
+- Exponential backoff retries (1s, 2s, 4s …) with `RetryCount` tracked
+- Dead-letter queue for notifications that exhaust retries
+- Failure recorded on the notification; duplicate-safe retry handling
+
+**Done when:** forcing provider failure shows retries then dead-lettering, and
+the database reflects `Failed`.
+
+---
+
+## M6 — Test suite & DoD verification
+Lock in the behaviour and confirm the end-to-end flow.
+
+- Test project(s) under `tests/` added to the solution
+- Cover the dd.md §13 scenarios: accepted/stored, published, delivered, retry on
+  failure, retry exhaustion → DLQ, already-sent not re-delivered, status retrievable
+- Verify the full happy and failure paths end to end
+
+**Done when:** `dotnet test` is green and both `Queued → Processing → Sent` and
+`Queued → Processing → Failed → Retry → Failed/DLQ` are demonstrated.
+
+---
+
+## After the core (dd.md §14)
+Not daily milestones — revisit once the DoD flow works.
+
+- Outbox pattern for DB/publish consistency
+- Additional channels (SMS, push)
+- Scheduled notifications
+- Priority handling
+- Metrics/monitoring (delivery rate, retries, failures, latency)
+- Authentication and authorization
