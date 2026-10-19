@@ -1,3 +1,4 @@
+using Application.DTOs;
 using Domain;
 
 namespace Application.Interfaces;
@@ -5,9 +6,7 @@ namespace Application.Interfaces;
 public interface INotificationService
 {
     Task<Guid> CreateAsync(
-        string recipient,
-        string subject,
-        string message,
+        NotificationDto dto,
         CancellationToken cancellationToken = default);
 
     Task<Notification?> GetByIdAsync(

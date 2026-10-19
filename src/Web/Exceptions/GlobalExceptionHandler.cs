@@ -4,14 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 namespace Web.Exceptions;
 
 public sealed class GlobalExceptionHandler(
-    IProblemDetailsService problemDetailsService
+    ILogger<GlobalExceptionHandler> logger
 ) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
+        HttpContext context,
         Exception exception,
         CancellationToken cancellationToken)
     {
+        logger.LogError(exception, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
         var problemDetails = new ProblemDetails
         {
             Status = StatusCodes.Status500InternalServerError,
@@ -19,14 +20,10 @@ public sealed class GlobalExceptionHandler(
             Detail = "An unexpected error occurred."
         };
 
-        httpContext.Response.StatusCode = problemDetails.Status.Value;
-
-        await problemDetailsService.WriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = problemDetails
-        });
+        context.Response.StatusCode = problemDetails.Status.Value;
+        context.Response.ContentType = "application/json";
+        
+        await context.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
         return true;
     }

@@ -1,3 +1,4 @@
+using Application.DTOs;
 using Application.Interfaces;
 using Domain;
 
@@ -10,15 +11,13 @@ public sealed class NotificationService(
     : INotificationService
 {
     public async Task<Guid> CreateAsync(
-        string recipient,
-        string subject,
-        string message,
+        NotificationDto dto,
         CancellationToken cancellationToken = default)
     {
         var notification = new Notification(
-            recipient,
-            subject,
-            message);
+            dto.Recipient,
+            dto.Subject,
+            dto.Message);
 
         await repository.AddAsync(
             notification,

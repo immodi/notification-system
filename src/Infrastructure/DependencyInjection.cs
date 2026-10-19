@@ -1,4 +1,6 @@
 using Application.Interfaces;
+using Application.Services;
+using Infrastructure.Messaging;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +18,15 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(
                 configuration.GetConnectionString("DefaultConnection")));
+
+
+        services.AddSingleton(typeof(IQueue<>), typeof(InMemoryQueue<>));
         
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); 
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

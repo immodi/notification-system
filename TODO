@@ -16,20 +16,6 @@ actually run and see. Source of truth: `docs/dd.md`.
 
 ---
 
-## M1 — Notification intake API
-Turn the API into a real accept-and-inspect surface.
-
-- `POST /notifications`: validate, create, store, publish, return `202 Accepted`
-- `GET /notifications/{id}` to expose current status
-- Consistent ProblemDetails for validation/bad input
-- Remove the `/hello` and `/exception` placeholders
-- EF entity configuration + indexes for status/time (with migration)
-
-**Done when:** posting a valid notification returns `202` with an id, the row is
-stored as `Queued`, `GET` returns it, and invalid input returns problem details.
-
----
-
 ## M2 — Delivery pipeline, happy path
 Make queued work actually get delivered, behind a provider boundary.
 
