@@ -1,13 +1,15 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
 public sealed class NotificationService(
     IUnitOfWork unitOfWork,
     INotificationRepository repository,
-    IQueue<Notification> queue)
+    ILogger<NotificationService> logger,
+    IQueue<Guid> queue)
     : INotificationService
 {
     public async Task<Guid> CreateAsync(
@@ -26,8 +28,10 @@ public sealed class NotificationService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         await queue.EnqueueAsync(
-            notification,
+            notification.Id,
             cancellationToken);
+        
+        logger.LogInformation("Notification {NotificationId} queued", notification.Id);
 
         return notification.Id;
     }
