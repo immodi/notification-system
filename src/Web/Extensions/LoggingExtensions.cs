@@ -4,7 +4,7 @@ namespace Web.Extensions;
 
 public static class LoggingExtensions
 {
-    public static async void AddCustomLogging(
+    public static void AddCustomLogging(
         this IServiceCollection services)
     {
         services.AddHttpLogging(
