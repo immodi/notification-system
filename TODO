@@ -13,19 +13,28 @@ actually run and see. Source of truth: `docs/dd.md`.
 - [x] Infrastructure: repositories, `UnitOfWork`, `InMemoryQueue`, DI wiring
 - [x] Central error handling: `GlobalExceptionHandler` + ProblemDetails + HTTP logging
 - [x] Automatic migrations on startup (Development)
+- [x] M2 delivery pipeline: provider boundary, hosted worker, persisted
+      `Queued → Processing → Sent`, duplicate-safe, structured lifecycle logs
 
 ---
 
-## M2 — Delivery pipeline, happy path
+## M2 — Delivery pipeline, happy path ✅
 Make queued work actually get delivered, behind a provider boundary.
 
-- `INotificationProvider` abstraction + fake email provider (can simulate failure)
-- Hosted background worker that consumes the queue
-- `Queued → Processing → Sent` transitions; skip notifications already `Sent`
-- Structured logging for queued / processing / delivered
+- [x] `INotificationProvider` abstraction + fake email provider (can simulate failure)
+- [x] Hosted background worker that consumes the queue
+- [x] `Queued → Processing → Sent` transitions; skip notifications already `Sent`
+- [x] Structured logging for queued / processing / delivered
 
 **Done when:** after posting, the worker delivers it and the status becomes
 `Sent`; re-delivering an already-`Sent` notification is a no-op.
+
+Verified: `POST` → `Processing` → `Sent` with `ProcessedAt` set; replaying an
+already-`Sent` id logs `already sent` and does not deliver again. Failure
+simulation (`fail@example.com`) records `Failed`, `RetryCount`, and `LastError`.
+The worker owns state transitions and persistence; the provider only delivers.
+Queue messages carry the notification id only. Worker/provider live under
+`Infrastructure/Processing` and `Infrastructure/Providers`.
 
 ---
 

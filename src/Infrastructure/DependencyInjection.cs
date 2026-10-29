@@ -2,6 +2,8 @@ using Application.Interfaces;
 using Application.Services;
 using Infrastructure.Messaging;
 using Infrastructure.Persistence;
+using Infrastructure.Processing;
+using Infrastructure.Providers;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +29,10 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationProvider, DummyNotificationProvider>();
 
+        services.AddHostedService<NotificationWorker>();
+        
         return services;
     }
 }
