@@ -84,14 +84,3 @@ Lock in the behaviour and confirm the end-to-end flow.
 **Done when:** `dotnet test` is green and both `Queued → Processing → Sent` and
 `Queued → Processing → Failed → Retry → Failed/DLQ` are demonstrated.
 
----
-
-## After the core (dd.md §14)
-Not daily milestones — revisit once the DoD flow works.
-
-- Outbox pattern for DB/publish consistency
-- Additional channels (SMS, push)
-- Scheduled notifications
-- Priority handling
-- Metrics/monitoring (delivery rate, retries, failures, latency)
-- Authentication and authorization
