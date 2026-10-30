@@ -26,7 +26,7 @@ The first supported channel is email, delivered through a fake provider that can
 - **Dead-letter queue.** Notifications that exhaust their retries are parked in a DLQ for inspection.
 - **Provider abstraction.** Delivery sits behind `INotificationProvider`, so adding SMS or push is a new class, not a redesign.
 - **Persisted lifecycle.** Every notification moves through `Queued → Processing → Sent / Failed`, and the current state is always queryable.
-- **Consistent errors.** One central exception handler returns RFC 7807 `ProblemDetails` for every failure.
+- **Consistent errors.** Every failure returns RFC 7807 `ProblemDetails`: unhandled exceptions through a single `GlobalExceptionHandler`, validation failures through validation `ProblemDetails`, and empty error status codes such as 404 and 405 through status code pages.
 - **Structured logging.** Each lifecycle event is logged with the notification ID so a notification can be traced end to end.
 - **One-command local infrastructure.** Docker Compose runs PostgreSQL and RabbitMQ. All connection details come from configuration.
 - **Tested.** Unit and integration tests cover the happy path, retries, dead-lettering and idempotency.
@@ -279,8 +279,9 @@ Example validation error:
   "title": "One or more validation errors occurred.",
   "status": 400,
   "errors": {
-    "recipient": ["The recipient field is not a valid e-mail address."]
-  }
+    "Recipient": ["The Recipient field is not a valid e-mail address."]
+  },
+  "traceId": "00-00000000000000000000000000000000-0000000000000000-00"
 }
 ```
 
@@ -359,7 +360,7 @@ dotnet ef migrations add <Name> --project src/Infrastructure --startup-project s
 
 ## Observability
 
-Errors are returned as `ProblemDetails` by a single `GlobalExceptionHandler`, which also logs the unhandled exception with the request method and path. No endpoint implements its own error handling.
+Errors are returned as `ProblemDetails`. Unhandled exceptions are handled by a single `GlobalExceptionHandler`, which also logs the exception with the request method and path. Validation failures and empty error status codes such as 404 and 405 are converted to `ProblemDetails` by the framework. No endpoint implements its own error handling.
 
 Every major lifecycle event is logged with the notification ID as a structured property, so you can filter by `NotificationId` and follow one notification from request to outcome:
 
