@@ -6,7 +6,7 @@ actually run and see. Source of truth: `docs/dd.md`.
 ## Done
 - [x] Solution layout: `src/`, `tests/`, `docs/`
 - [x] Domain model: `Notification` + `NotificationStatus` with state transitions
-- [x] Persistence: EF Core (SQLite) `AppDbContext` + initial migration
+- [x] Persistence: EF Core (PostgreSQL) `AppDbContext` + initial migration
 - [x] Application interfaces: `INotificationService`, `INotificationRepository`,
       `IRepository`, `IUnitOfWork`, `IQueue`
 - [x] `NotificationService` (create/get/update/delete)

@@ -28,7 +28,7 @@ The first supported channel is email, delivered through a fake provider that can
 - **Persisted lifecycle.** Every notification moves through `Queued → Processing → Sent / Failed`, and the current state is always queryable.
 - **Consistent errors.** One central exception handler returns RFC 7807 `ProblemDetails` for every failure.
 - **Structured logging.** Each lifecycle event is logged with the notification ID so a notification can be traced end to end.
-- **One-command local infrastructure.** Docker Compose runs the SQL database and RabbitMQ. All connection details come from configuration.
+- **One-command local infrastructure.** Docker Compose runs PostgreSQL and RabbitMQ. All connection details come from configuration.
 - **Tested.** Unit and integration tests cover the happy path, retries, dead-lettering and idempotency.
 
 ---
@@ -107,7 +107,7 @@ Web  →  Infrastructure  →  Application  →  Domain
 ```text
 .
 ├── NotificationSystem.sln
-├── docker-compose.yml            # SQL database + RabbitMQ for local development
+├── docker-compose.yml            # PostgreSQL + RabbitMQ for local development
 ├── docs/
 │   └── dd.md                     # Design document
 ├── src/
@@ -142,7 +142,7 @@ Web  →  Infrastructure  →  Application  →  Domain
 | --- | --- |
 | Runtime | .NET 10 |
 | API | ASP.NET Core minimal APIs |
-| Persistence | Entity Framework Core, SQL database |
+| Persistence | Entity Framework Core, PostgreSQL |
 | Messaging | RabbitMQ |
 | Background processing | ASP.NET Core hosted service (`BackgroundService`) |
 | Local infrastructure | Docker Compose |
@@ -174,7 +174,7 @@ This starts:
 
 | Service | Port | Notes |
 | --- | --- | --- |
-| SQL database | `5432` | Stores notification state. |
+| PostgreSQL | `5432` | Stores notification state. |
 | RabbitMQ (AMQP) | `5672` | Message broker. |
 | RabbitMQ management UI | `15672` | <http://localhost:15672>. Local-only default credentials are in `docker-compose.yml`. |
 
@@ -333,7 +333,7 @@ Infrastructure settings come from standard ASP.NET Core configuration: `appsetti
 
 | Key | Description | Local default |
 | --- | --- | --- |
-| `ConnectionStrings:DefaultConnection` | SQL database connection string. | Matches `docker-compose.yml` |
+| `ConnectionStrings:DefaultConnection` | PostgreSQL connection string. | Matches `docker-compose.yml` |
 | `RabbitMq:Host` | RabbitMQ host name. | `localhost` |
 | `RabbitMq:Port` | RabbitMQ AMQP port. | `5672` |
 | `RabbitMq:Username` / `RabbitMq:Password` | RabbitMQ credentials. | Local-only defaults from `docker-compose.yml` |
