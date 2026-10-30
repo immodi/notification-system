@@ -63,7 +63,7 @@ For every message, the worker:
 2. Checks that it still needs processing. Already-`Sent` notifications are skipped.
 3. Marks it `Processing`.
 4. Attempts delivery through the notification provider.
-5. Records the result: `Sent`, or `Failed` with the error and an incremented retry count.
+5. Records the result: `Sent`, or `Failed` with the error and an incremented retry count. `finishedAt` is set only for terminal outcomes.
 6. Acknowledges the message once handling is complete.
 
 ### Notification lifecycle
@@ -82,8 +82,10 @@ stateDiagram-v2
 | --- | --- |
 | `Queued` | Stored and published, waiting for a worker. |
 | `Processing` | A worker has picked it up and is attempting delivery. |
-| `Sent` | Delivered successfully. `processedAt` is set. |
+| `Sent` | Delivered successfully. `finishedAt` is set. |
 | `Failed` | The last delivery attempt failed. It is either waiting to be retried or has exhausted its retries and been dead-lettered. |
+
+`finishedAt` marks a terminal state. It is set for `Sent` notifications, and for `Failed` notifications only after their retries are exhausted. A `Failed` notification that is still waiting for a retry keeps `finishedAt: null`.
 
 ---
 
@@ -220,7 +222,7 @@ curl http://localhost:5040/notifications/7c1e4a52-9b3d-4f6e-8a21-5d0c3b9e7f14
   "status": "Sent",
   "retryCount": 0,
   "createdAt": "2026-10-29T18:30:12.481Z",
-  "processedAt": "2026-10-29T18:30:13.529Z",
+  "finishedAt": "2026-10-29T18:30:13.529Z",
   "lastError": null
 }
 ```
@@ -241,7 +243,7 @@ After about 11 seconds, the notification ends up as:
 {
   "status": "Failed",
   "retryCount": 4,
-  "processedAt": null,
+  "finishedAt": "2026-10-29T18:30:23.000Z",
   "lastError": "Simulated provider failure"
 }
 ```
@@ -291,7 +293,7 @@ Returns the current state of a notification.
 
 | Status | Description |
 | --- | --- |
-| `200 OK` | The notification, including `status`, `retryCount`, `processedAt` and `lastError`. |
+| `200 OK` | The notification, including `status`, `retryCount`, `finishedAt` and `lastError`. |
 | `404 Not Found` | No notification exists with that ID. Returns a `ProblemDetails` response. |
 
 ---

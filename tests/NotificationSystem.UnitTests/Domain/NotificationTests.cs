@@ -12,7 +12,7 @@ public class NotificationTests
         Assert.NotEqual(Guid.Empty, notification.Id);
         Assert.Equal(NotificationStatus.Queued, notification.Status);
         Assert.Equal(0, notification.RetryCount);
-        Assert.Null(notification.ProcessedAt);
+        Assert.Null(notification.FinishedAt);
         Assert.Null(notification.LastError);
         Assert.InRange(
             notification.CreatedAt,
@@ -28,10 +28,11 @@ public class NotificationTests
         notification.MarkAsProcessing();
 
         Assert.Equal(NotificationStatus.Processing, notification.Status);
+        Assert.Null(notification.FinishedAt);
     }
 
     [Fact]
-    public void Mark_as_sent_sets_processed_at_and_clears_error()
+    public void Mark_as_sent_sets_finished_at_and_clears_error()
     {
         var notification = new Notification("jane@example.com", "Subject", "Message");
         notification.MarkAsFailed("boom");
@@ -39,7 +40,7 @@ public class NotificationTests
         notification.MarkAsSent();
 
         Assert.Equal(NotificationStatus.Sent, notification.Status);
-        Assert.NotNull(notification.ProcessedAt);
+        Assert.NotNull(notification.FinishedAt);
         Assert.Null(notification.LastError);
     }
 
@@ -54,6 +55,19 @@ public class NotificationTests
         Assert.Equal(NotificationStatus.Failed, notification.Status);
         Assert.Equal(2, notification.RetryCount);
         Assert.Equal("second failure", notification.LastError);
-        Assert.Null(notification.ProcessedAt);
+        Assert.Null(notification.FinishedAt);
+    }
+
+    [Fact]
+    public void Terminal_failure_sets_finished_at()
+    {
+        var notification = new Notification("jane@example.com", "Subject", "Message");
+
+        notification.MarkAsFailed("final failure", isTerminal: true);
+
+        Assert.Equal(NotificationStatus.Failed, notification.Status);
+        Assert.Equal(1, notification.RetryCount);
+        Assert.Equal("final failure", notification.LastError);
+        Assert.NotNull(notification.FinishedAt);
     }
 }

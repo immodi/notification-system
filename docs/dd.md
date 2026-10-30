@@ -251,7 +251,7 @@ The notification record contains the information needed to:
 * Track its lifecycle
 * Count retries
 * Record failures
-* Determine when processing completed
+* Determine when the notification reached a terminal state
 
 The database is the source of truth for notification state, while RabbitMQ is responsible for transporting work between the API and background processing.
 

@@ -119,7 +119,9 @@ public class NotificationWorker(
         }
         catch (Exception ex)
         {
-            notification.MarkAsFailed(ex.Message);
+            var isTerminal = notification.RetryCount + 1 > _deliveryOptions.MaxRetries;
+            notification.MarkAsFailed(ex.Message, isTerminal);
+
             logger.LogError(
                 ex,
                 "Notification {NotificationId} failed on attempt {Attempt} of {MaxAttempts}",
@@ -129,7 +131,7 @@ public class NotificationWorker(
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            if (notification.RetryCount > _deliveryOptions.MaxRetries)
+            if (isTerminal)
             {
                 logger.LogWarning(
                     "Notification {NotificationId} moved to dead-letter queue after {RetryCount} failed attempts",

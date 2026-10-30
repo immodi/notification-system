@@ -37,7 +37,7 @@ Make queued work actually get delivered, behind a provider boundary.
 **Done when:** after posting, the worker delivers it and the status becomes
 `Sent`; re-delivering an already-`Sent` notification is a no-op.
 
-Verified: `POST` → `Processing` → `Sent` with `ProcessedAt` set; replaying an
+Verified: `POST` → `Processing` → `Sent` with `FinishedAt` set; replaying an
 already-`Sent` id logs `already sent` and does not deliver again. Failure
 simulation (`fail@example.com`) records `Failed`, `RetryCount`, and `LastError`.
 The worker owns state transitions and persistence; the provider only delivers.

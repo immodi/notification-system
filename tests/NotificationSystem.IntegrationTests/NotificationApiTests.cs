@@ -42,7 +42,7 @@ public class NotificationApiTests(NotificationApiFactory factory)
         Assert.Equal("Integration test", stored.Subject);
         Assert.Equal("A notification from the test suite", stored.Message);
         Assert.Equal(0, stored.RetryCount);
-        Assert.NotNull(stored.ProcessedAt);
+        Assert.NotNull(stored.FinishedAt);
         Assert.Null(stored.LastError);
         Assert.Equal(1, factory.Provider.Attempts(created.Id));
     }
@@ -100,7 +100,7 @@ public class NotificationApiTests(NotificationApiFactory factory)
             notification => notification.Status == "Failed" && notification.RetryCount == 4,
             DefaultTimeout);
 
-        Assert.Null(failed.ProcessedAt);
+        Assert.NotNull(failed.FinishedAt);
         Assert.Equal("Simulated provider failure", failed.LastError);
         Assert.Equal(4, factory.Provider.Attempts(id));
 
@@ -244,6 +244,6 @@ public class NotificationApiTests(NotificationApiFactory factory)
         string Status,
         int RetryCount,
         DateTime CreatedAt,
-        DateTime? ProcessedAt,
+        DateTime? FinishedAt,
         string? LastError);
 }

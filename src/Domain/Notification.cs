@@ -31,7 +31,7 @@ public class Notification
 
     public DateTime CreatedAt { get; private set; }
 
-    public DateTime? ProcessedAt { get; private set; }
+    public DateTime? FinishedAt { get; private set; }
 
     public string? LastError { get; private set; }
 
@@ -43,14 +43,17 @@ public class Notification
     public void MarkAsSent()
     {
         Status = NotificationStatus.Sent;
-        ProcessedAt = DateTime.UtcNow;
+        FinishedAt = DateTime.UtcNow;
         LastError = null;
     }
 
-    public void MarkAsFailed(string error)
+    public void MarkAsFailed(string error, bool isTerminal = false)
     {
         Status = NotificationStatus.Failed;
         RetryCount++;
         LastError = error;
+
+        if (isTerminal)
+            FinishedAt = DateTime.UtcNow;
     }
 }
