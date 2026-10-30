@@ -15,6 +15,8 @@ actually run and see. Source of truth: `docs/dd.md`.
 - [x] Automatic migrations on startup (Development)
 - [x] M2 delivery pipeline: provider boundary, hosted worker, persisted
       `Queued → Processing → Sent`, duplicate-safe, structured lifecycle logs
+- [x] M3 local infrastructure: Docker Compose, PostgreSQL, configuration-driven
+      connections, automatic migrations
 
 ---
 
@@ -38,14 +40,19 @@ Queue messages carry the notification id only. Worker/provider live under
 
 ---
 
-## M3 — Local infrastructure & configuration
+## M3 — Local infrastructure & configuration ✅
 Make the system runnable together with its real dependencies.
 
-- `docker-compose.yml` with SQL DB and RabbitMQ
-- DB and RabbitMQ connection details from configuration, not hardcoded
+- [x] `docker-compose.yml` with SQL DB and RabbitMQ
+- [x] DB and RabbitMQ connection details from configuration, not hardcoded
 
 **Done when:** from a clean checkout, `docker compose up` starts the
 dependencies and the app connects to them.
+
+Verified: `docker compose up -d` starts PostgreSQL 17 and RabbitMQ 4
+(management UI on `15672`). The API applies its migration on startup and stores
+notifications in PostgreSQL using the `ConnectionStrings:DefaultConnection`
+configuration value.
 
 ---
 

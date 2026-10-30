@@ -18,7 +18,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(
+            options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection")));
 
 

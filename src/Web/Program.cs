@@ -15,7 +15,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseAutoMigrations();
+    await app.UseAutoMigrationsAsync();
 }
 
 app.UseExceptionHandler();

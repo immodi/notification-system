@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: notification-system-db
+    environment:
+      POSTGRES_USER: notifications
+      POSTGRES_PASSWORD: notifications
+      POSTGRES_DB: notifications
+    ports:
+      - "5432:5432"
+    volumes:
+      - notification-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications -d notifications"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: notification-system-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: notifications
+      RABBITMQ_DEFAULT_PASS: notifications
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - notification-rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  notification-db:
+  notification-rabbitmq:
