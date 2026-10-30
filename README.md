@@ -417,7 +417,9 @@ public interface INotificationProvider
 }
 ```
 
-To add a channel such as SMS or push, implement `INotificationProvider` in `Infrastructure/Providers` and register it in `DependencyInjection.cs`. The worker, queue, retry policy and API stay unchanged. Throwing from the provider marks the attempt as failed and triggers the normal retry flow.
+To replace the bundled email provider with another channel such as SMS or push, implement `INotificationProvider` in `Infrastructure/Providers` and replace the registration in `DependencyInjection.cs`. The worker, queue, retry policy and API stay unchanged. Throwing from the provider marks the attempt as failed and triggers the normal retry flow.
+
+To support several channels at the same time, add a channel field to `Notification` and a resolver that selects the matching provider. The delivery pipeline itself still does not change.
 
 ---
 
