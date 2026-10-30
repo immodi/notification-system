@@ -62,6 +62,12 @@ public class NotificationApiTests(NotificationApiFactory factory)
 
         var missing = await client.GetAsync($"/notifications/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal(
+            "application/problem+json",
+            missing.Content.Headers.ContentType?.MediaType);
+
+        var problem = await missing.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(404, problem.GetProperty("status").GetInt32());
     }
 
     [Fact]

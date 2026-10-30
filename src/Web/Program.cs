@@ -19,6 +19,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseHttpLogging();
 app.MapNotificationEndpoints();
 
