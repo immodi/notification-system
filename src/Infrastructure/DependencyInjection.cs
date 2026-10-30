@@ -24,6 +24,9 @@ public static class DependencyInjection
         services.Configure<RabbitMqOptions>(
             configuration.GetSection(RabbitMqOptions.SectionName));
 
+        services.Configure<DeliveryOptions>(
+            configuration.GetSection(DeliveryOptions.SectionName));
+
         services.AddSingleton(typeof(IQueue<>), typeof(RabbitMqQueue<>));
         
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); 

@@ -34,6 +34,35 @@ public class InMemoryQueue<T> : IQueue<T>
         }
     }
 
+    public Task EnqueueDelayedAsync(
+        T message,
+        TimeSpan delay,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (delay <= TimeSpan.Zero)
+            return EnqueueAsync(message, cancellationToken);
+
+        _ = DeliverLaterAsync(message, delay);
+
+        return Task.CompletedTask;
+    }
+
+    private async Task DeliverLaterAsync(T message, TimeSpan delay)
+    {
+        try
+        {
+            await Task.Delay(delay);
+            await EnqueueAsync(message);
+        }
+        catch
+        {
+            // The in-memory queue is best effort; the RabbitMQ queue owns
+            // durability in production.
+        }
+    }
+
     private sealed class InMemoryQueueMessage(T payload) : IQueueMessage<T>
     {
         public T Payload { get; } = payload;

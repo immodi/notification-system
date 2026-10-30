@@ -314,7 +314,7 @@ If the last attempt also fails, the notification stays `Failed` in the database 
 | --- | --- |
 | Notifications exchange | Entry point the API publishes to. |
 | Main queue | Pending work consumed by the background worker. |
-| Retry queues | Hold failed messages for the backoff delay, then route them back to the main queue. |
+| Retry queue | Holds failed messages for the backoff delay, then routes them back to the main queue. |
 | Dead-letter queue | Holds messages whose retries are exhausted, for inspection and manual replay. |
 
 Messages are acknowledged only after the worker has finished handling them: either the notification was delivered, or the failure has been recorded and handed off to a retry or the DLQ. If the worker is killed mid-flight, the broker redelivers the message and the restarted worker picks it up.

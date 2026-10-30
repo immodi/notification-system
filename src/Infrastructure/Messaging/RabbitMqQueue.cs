@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Application.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -25,18 +26,58 @@ public sealed class RabbitMqQueue<T>(
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        await PublishAsync(
+            RabbitMqTopology.Exchange,
+            RabbitMqTopology.RoutingKey,
+            message,
+            expiration: null,
+            cancellationToken);
+    }
+
+    public async Task EnqueueDelayedAsync(
+        T message,
+        TimeSpan delay,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (delay <= TimeSpan.Zero)
+        {
+            await EnqueueAsync(message, cancellationToken);
+            return;
+        }
+
+        var expiration = ((long)Math.Ceiling(delay.TotalMilliseconds))
+            .ToString(CultureInfo.InvariantCulture);
+
+        await PublishAsync(
+            RabbitMqTopology.RetryExchange,
+            RabbitMqTopology.RetryRoutingKey,
+            message,
+            expiration,
+            cancellationToken);
+    }
+
+    private async Task PublishAsync(
+        string exchange,
+        string routingKey,
+        T message,
+        string? expiration,
+        CancellationToken cancellationToken)
+    {
         var body = JsonSerializer.SerializeToUtf8Bytes(message);
         await using var channel = await CreateChannelAsync(cancellationToken);
 
         var properties = new BasicProperties
         {
             Persistent = true,
-            ContentType = "application/json"
+            ContentType = "application/json",
+            Expiration = expiration
         };
 
         await channel.BasicPublishAsync(
-            RabbitMqTopology.Exchange,
-            RabbitMqTopology.RoutingKey,
+            exchange,
+            routingKey,
             mandatory: false,
             basicProperties: properties,
             body: body,
@@ -176,6 +217,31 @@ public sealed class RabbitMqQueue<T>(
             RabbitMqTopology.DeadLetterQueue,
             RabbitMqTopology.DeadLetterExchange,
             RabbitMqTopology.DeadLetterRoutingKey,
+            cancellationToken: cancellationToken);
+
+        await channel.ExchangeDeclareAsync(
+            RabbitMqTopology.RetryExchange,
+            ExchangeType.Direct,
+            durable: true,
+            autoDelete: false,
+            cancellationToken: cancellationToken);
+
+        await channel.QueueDeclareAsync(
+            RabbitMqTopology.RetryQueue,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: new Dictionary<string, object?>
+            {
+                ["x-dead-letter-exchange"] = RabbitMqTopology.Exchange,
+                ["x-dead-letter-routing-key"] = RabbitMqTopology.RoutingKey
+            },
+            cancellationToken: cancellationToken);
+
+        await channel.QueueBindAsync(
+            RabbitMqTopology.RetryQueue,
+            RabbitMqTopology.RetryExchange,
+            RabbitMqTopology.RetryRoutingKey,
             cancellationToken: cancellationToken);
     }
 

@@ -19,6 +19,8 @@ actually run and see. Source of truth: `docs/dd.md`.
       connections, automatic migrations
 - [x] M4 RabbitMQ messaging: durable id-only messages, explicit acks,
       at-least-once delivery, reconnect-safe topology
+- [x] M5 retries: exponential backoff (1s, 2s, 4s), persisted failure state,
+      TTL retry queue, dead-letter queue for exhausted notifications
 
 ---
 
@@ -78,15 +80,22 @@ outcome; an unacknowledged channel close requeues the message.
 
 ---
 
-## M5 — Retries & dead-lettering
+## M5 — Retries & dead-lettering ✅
 Handle the failure path described in dd.md.
 
-- Exponential backoff retries (1s, 2s, 4s …) with `RetryCount` tracked
-- Dead-letter queue for notifications that exhaust retries
-- Failure recorded on the notification; duplicate-safe retry handling
+- [x] Exponential backoff retries (1s, 2s, 4s …) with `RetryCount` tracked
+- [x] Dead-letter queue for notifications that exhaust retries
+- [x] Failure recorded on the notification; duplicate-safe retry handling
 
 **Done when:** forcing provider failure shows retries then dead-lettering, and
 the database reflects `Failed`.
+
+Verified: posting to `fail@example.com` produced attempts at 1s, 2s and 4s. The
+notification ended as `Failed`, `RetryCount = 4`, `LastError = "Simulated
+provider failure"`, and one message in `notifications.dlq`. Failed retries are
+published to a TTL retry queue that dead-letters back to the main queue.
+Already-sent and already-exhausted notifications are acknowledged without a new
+delivery attempt.
 
 ---
 

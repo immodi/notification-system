@@ -3,14 +3,18 @@ using Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Processing;
 
 public class NotificationWorker(
     ILogger<NotificationWorker> logger,
     IServiceScopeFactory scopeFactory,
-    IQueue<Guid> queue) : BackgroundService
+    IQueue<Guid> queue,
+    IOptions<DeliveryOptions> deliveryOptions) : BackgroundService
 {
+    private readonly DeliveryOptions _deliveryOptions = deliveryOptions.Value;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -39,8 +43,12 @@ public class NotificationWorker(
             {
                 try
                 {
-                    await ProcessAsync(message.Payload, stoppingToken);
-                    await message.AcknowledgeAsync(stoppingToken);
+                    var outcome = await ProcessAsync(message.Payload, stoppingToken);
+
+                    if (outcome is ProcessingOutcome.DeadLetter)
+                        await message.RejectAsync(requeue: false, stoppingToken);
+                    else
+                        await message.AcknowledgeAsync(stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -60,7 +68,9 @@ public class NotificationWorker(
         }
     }
 
-    private async Task ProcessAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<ProcessingOutcome> ProcessAsync(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         using var scope = scopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
@@ -71,13 +81,23 @@ public class NotificationWorker(
         if (notification is null)
         {
             logger.LogInformation("Notification {NotificationId} not found", id);
-            return;
+            return ProcessingOutcome.Acknowledge;
         }
 
         if (notification.Status is NotificationStatus.Sent)
         {
             logger.LogInformation("Notification {NotificationId} already sent", notification.Id);
-            return;
+            return ProcessingOutcome.Acknowledge;
+        }
+
+        if (notification.Status is NotificationStatus.Failed
+            && notification.RetryCount > _deliveryOptions.MaxRetries)
+        {
+            logger.LogInformation(
+                "Notification {NotificationId} already exhausted its retries, moving to dead-letter queue",
+                notification.Id);
+
+            return ProcessingOutcome.DeadLetter;
         }
 
         logger.LogInformation("Notification {NotificationId} processing", notification.Id);
@@ -89,6 +109,9 @@ public class NotificationWorker(
             await provider.SendNotificationAsync(notification, cancellationToken);
             notification.MarkAsSent();
             logger.LogInformation("Notification {NotificationId} delivered", notification.Id);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return ProcessingOutcome.Acknowledge;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -97,10 +120,45 @@ public class NotificationWorker(
         catch (Exception ex)
         {
             notification.MarkAsFailed(ex.Message);
-            logger.LogError(ex, "Notification {NotificationId} failed", notification.Id);
-        }
+            logger.LogError(
+                ex,
+                "Notification {NotificationId} failed on attempt {Attempt} of {MaxAttempts}",
+                notification.Id,
+                notification.RetryCount,
+                _deliveryOptions.MaxRetries + 1);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            if (notification.RetryCount > _deliveryOptions.MaxRetries)
+            {
+                logger.LogWarning(
+                    "Notification {NotificationId} moved to dead-letter queue after {RetryCount} failed attempts",
+                    notification.Id,
+                    notification.RetryCount);
+
+                return ProcessingOutcome.DeadLetter;
+            }
+
+            var delay = GetRetryDelay(notification.RetryCount);
+            logger.LogInformation(
+                "Notification {NotificationId} retrying in {DelaySeconds}s (retry {RetryCount} of {MaxRetries})",
+                notification.Id,
+                delay.TotalSeconds,
+                notification.RetryCount,
+                _deliveryOptions.MaxRetries);
+
+            await queue.EnqueueDelayedAsync(notification.Id, delay, cancellationToken);
+
+            return ProcessingOutcome.Acknowledge;
+        }
+    }
+
+    private TimeSpan GetRetryDelay(int retryCount)
+    {
+        var exponent = Math.Max(0, retryCount - 1);
+        var seconds = _deliveryOptions.BaseDelaySeconds * Math.Pow(2, exponent);
+
+        return TimeSpan.FromSeconds(seconds);
     }
 
     private async Task TryRejectAsync(IQueueMessage<Guid> message, bool requeue)
@@ -116,5 +174,11 @@ public class NotificationWorker(
                 "Could not reject notification message {NotificationId}",
                 message.Payload);
         }
+    }
+
+    private enum ProcessingOutcome
+    {
+        Acknowledge,
+        DeadLetter
     }
 }
