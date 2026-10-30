@@ -14,7 +14,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U notifications -d notifications"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -31,7 +32,8 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
 
 volumes:
   notification-db:

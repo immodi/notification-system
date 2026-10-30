@@ -167,10 +167,10 @@ cd notification-system
 ### 2. Start the dependencies
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
 ```
 
-This starts:
+This starts the dependencies and waits until both report healthy. On a clean checkout PostgreSQL may take a little while to initialize.
 
 | Service | Port | Notes |
 | --- | --- | --- |
