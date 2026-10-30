@@ -17,6 +17,8 @@ actually run and see. Source of truth: `docs/dd.md`.
       `Queued → Processing → Sent`, duplicate-safe, structured lifecycle logs
 - [x] M3 local infrastructure: Docker Compose, PostgreSQL, configuration-driven
       connections, automatic migrations
+- [x] M4 RabbitMQ messaging: durable id-only messages, explicit acks,
+      at-least-once delivery, reconnect-safe topology
 
 ---
 
@@ -56,15 +58,23 @@ configuration value.
 
 ---
 
-## M4 — Durable messaging with RabbitMQ
+## M4 — Durable messaging with RabbitMQ ✅
 Replace the in-memory queue with the real message boundary.
 
-- RabbitMQ-backed `IQueue<Notification>`, publishing only the notification id
-- Exchange + queue setup; explicit ack only after successful processing
-- At-least-once delivery; consumer tolerates duplicates
+- [x] RabbitMQ-backed `IQueue<Notification>`, publishing only the notification id
+- [x] Exchange + queue setup; explicit ack only after successful processing
+- [x] At-least-once delivery; consumer tolerates duplicates
 
 **Done when:** messages flow through RabbitMQ; killing the worker mid-flight and
 restarting it still processes the pending work.
+
+Verified: `POST` publishes a persistent, id-only message to the durable
+`notifications` exchange/queue. A worker killed while a notification was
+`Processing` left one message in RabbitMQ; restarting the worker picked it up,
+delivered it and acknowledged it. The API publishes through
+`Infrastructure/Messaging/RabbitMqQueue`, which declares the main queue and the
+dead-letter exchange/queue. Ack happens only after the worker has persisted the
+outcome; an unacknowledged channel close requeues the message.
 
 ---
 

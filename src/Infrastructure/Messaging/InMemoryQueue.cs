@@ -23,14 +23,37 @@ public class InMemoryQueue<T> : IQueue<T>
         return Task.CompletedTask;
     }
 
-    public async Task<T> DequeueAsync(
+    public async Task<IQueueMessage<T>?> DequeueAsync(
         CancellationToken cancellationToken = default)
     {
         await _signal.WaitAsync(cancellationToken);
 
         lock (_queue)
         {
-            return _queue.Dequeue();
+            return new InMemoryQueueMessage(_queue.Dequeue());
+        }
+    }
+
+    private sealed class InMemoryQueueMessage(T payload) : IQueueMessage<T>
+    {
+        public T Payload { get; } = payload;
+
+        public Task AcknowledgeAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task RejectAsync(
+            bool requeue,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return ValueTask.CompletedTask;
         }
     }
 }

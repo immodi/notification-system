@@ -6,6 +6,6 @@ public interface IQueue<T>
         T message,
         CancellationToken cancellationToken = default);
 
-    Task<T> DequeueAsync(
+    Task<IQueueMessage<T>?> DequeueAsync(
         CancellationToken cancellationToken = default);
 }

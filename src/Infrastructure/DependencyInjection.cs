@@ -21,8 +21,10 @@ public static class DependencyInjection
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection")));
 
+        services.Configure<RabbitMqOptions>(
+            configuration.GetSection(RabbitMqOptions.SectionName));
 
-        services.AddSingleton(typeof(IQueue<>), typeof(InMemoryQueue<>));
+        services.AddSingleton(typeof(IQueue<>), typeof(RabbitMqQueue<>));
         
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); 
         services.AddScoped<INotificationRepository, NotificationRepository>();
