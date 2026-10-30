@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
       <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
@@ -17,6 +18,10 @@
     <ItemGroup>
       <ProjectReference Include="..\Application\Application.csproj" />
       <ProjectReference Include="..\Domain\Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <InternalsVisibleTo Include="NotificationSystem.IntegrationTests" />
     </ItemGroup>
 
 </Project>

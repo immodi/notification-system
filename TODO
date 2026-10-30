@@ -21,6 +21,8 @@ actually run and see. Source of truth: `docs/dd.md`.
       at-least-once delivery, reconnect-safe topology
 - [x] M5 retries: exponential backoff (1s, 2s, 4s), persisted failure state,
       TTL retry queue, dead-letter queue for exhausted notifications
+- [x] M6 test suite: unit tests + Testcontainers integration tests covering the
+      design document scenarios
 
 ---
 
@@ -99,14 +101,21 @@ delivery attempt.
 
 ---
 
-## M6 — Test suite & DoD verification
+## M6 — Test suite & DoD verification ✅
 Lock in the behaviour and confirm the end-to-end flow.
 
-- Test project(s) under `tests/` added to the solution
-- Cover the dd.md §13 scenarios: accepted/stored, published, delivered, retry on
+- [x] Test project(s) under `tests/` added to the solution
+- [x] Cover the dd.md §13 scenarios: accepted/stored, published, delivered, retry on
   failure, retry exhaustion → DLQ, already-sent not re-delivered, status retrievable
-- Verify the full happy and failure paths end to end
+- [x] Verify the full happy and failure paths end to end
 
 **Done when:** `dotnet test` is green and both `Queued → Processing → Sent` and
 `Queued → Processing → Failed → Retry → Failed/DLQ` are demonstrated.
+
+Verified: `dotnet test` passes 15 unit tests and 5 integration tests. Integration
+tests use Testcontainers to start PostgreSQL 17 and RabbitMQ 4, run the real API
+host and worker, and assert the HTTP status, persisted state, retry count, DLQ
+message and duplicate-delivery behaviour. Unit tests cover the domain state
+transitions, `NotificationService` persistence/publishing and the in-memory
+queue.
 

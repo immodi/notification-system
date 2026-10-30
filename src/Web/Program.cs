@@ -23,3 +23,5 @@ app.UseHttpLogging();
 app.MapNotificationEndpoints();
 
 app.Run();
+
+public partial class Program { }

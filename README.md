@@ -132,6 +132,8 @@ Web  →  Infrastructure  →  Application  →  Domain
 │       ├── Extensions/
 │       └── Program.cs
 └── tests/                        # Unit and integration tests
+    ├── NotificationSystem.UnitTests/
+    └── NotificationSystem.IntegrationTests/
 ```
 
 ### Tech stack
@@ -380,7 +382,7 @@ Replayed messages for already-sent notifications log `already sent` and do nothi
 dotnet test
 ```
 
-Unit tests run with no external dependencies. Integration tests need Docker running.
+Unit tests run with no external dependencies. Integration tests need Docker running: they use Testcontainers to start PostgreSQL 17 and RabbitMQ 4 automatically, run the real API host and worker, and assert the end-to-end behaviour.
 
 The suite covers the scenarios defined in the design document:
 
