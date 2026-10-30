@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Web.Extensions;
 
 public static class JsonExtensions
@@ -7,6 +9,7 @@ public static class JsonExtensions
         services.ConfigureHttpJsonOptions(options => 
         {
             options.SerializerOptions.AllowTrailingCommas = true;
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
     }
 }
